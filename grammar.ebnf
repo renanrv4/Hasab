@@ -1,0 +1,27 @@
+(* TIPOS BÁSICOS *)
+Digit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+NonZero = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+
+Integer = ["-"], ("0" | NonZero, {Digit} ) ;
+
+Float = Integer , "." , Digit, {Digit} ;
+
+Boolean = "true" | "false" ;
+
+letter = "A" | "B" | "C" | "D" | "E" | "F" | "G"
+       | "H" | "I" | "J" | "K" | "L" | "M" | "N"
+       | "O" | "P" | "Q" | "R" | "S" | "T" | "U"
+       | "V" | "W" | "X" | "Y" | "Z"
+       | "a" | "b" | "c" | "d" | "e" | "f" | "g"
+       | "h" | "i" | "j" | "k" | "l" | "m" | "n"
+       | "o" | "p" | "q" | "r" | "s" | "t" | "u"
+       | "v" | "w" | "x" | "y" | "z" | ;
+
+char = letter | Digit | " " ;
+
+String = '"' { char } '"' ;
+
+Value = String | Integer | Float | Boolean ; 
+
+Lista = "[", [ Value, { ",", Value } ], "]" ;
+
