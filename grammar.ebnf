@@ -25,3 +25,14 @@ Value = String | Integer | Float | Boolean ;
 
 List = "[", [ Value, { ",", Value } ], "]" ;
 
+(* TIPOS *)
+Type = "Int" | "Float" | "String" | "Bool" | "[", Type , "]" ;
+
+(* IDENTIFICADORES *)
+Identifier = letter, { letter | Digit | "_" } ;
+
+(* DECLARAÇÕES *)
+(* obs: no momento estamos usando Value na declaração de uma variável, mas no futuro deve ser uma expressão *)
+AssignOperators = "=" | "+=" | "-=" | "*=" | "/=" ; 
+Assignment = Identifier, AssignOperators, Value ;
+
