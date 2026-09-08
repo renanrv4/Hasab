@@ -23,5 +23,5 @@ String = '"' { char } '"' ;
 
 Value = String | Integer | Float | Boolean ; 
 
-Lista = "[", [ Value, { ",", Value } ], "]" ;
+List = "[", [ Value, { ",", Value } ], "]" ;
 
