@@ -36,3 +36,14 @@ Identifier = letter, { letter | Digit | "_" } ;
 AssignOperators = "=" | "+=" | "-=" | "*=" | "/=" ; 
 Assignment = Identifier, AssignOperators, Value ;
 
+(* SÍMBOLOS *)
+Plus = "+" ;
+Minus = "-" ;
+Asterisk = "*" ;
+Divide = "/" ;
+Comma = "," ;
+Greater = ">" ;
+Less = "<" ;
+Percent = "%" ;
+Equals = "=" ;
+
