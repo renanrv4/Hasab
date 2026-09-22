@@ -17,33 +17,50 @@ letter = "A" | "B" | "C" | "D" | "E" | "F" | "G"
        | "o" | "p" | "q" | "r" | "s" | "t" | "u"
        | "v" | "w" | "x" | "y" | "z" | ;
 
-char = letter | Digit | " " ;
+char = letter | Digit | " " | "_" | "-" ;
 
 String = '"' { char } '"' ;
 
-Value = String | Integer | Float | Boolean ; 
+Literal = String | Integer | Float | Boolean ; 
 
-List = "[", [ Value, { ",", Value } ], "]" ;
+List = "[", [ Expression, { ",", Expression } ], "]" ;
 
-(* TIPOS *)
-Type = "Int" | "Float" | "String" | "Bool" | "[", Type , "]" ;
-
-(* IDENTIFICADORES *)
+(* IDENTIFICADORES E TIPOS *)
 Identifier = letter, { letter | Digit | "_" } ;
 
+Type = "Int" | "Float" | "String" | "Bool" | "[", Type , "]" ;
+
+(* 3. EXPRESSÕES E OPERADORES (Precedência)   *)
+(*<||>*)
+(*<&&>*)
+(*<==>, <!=>*)
+(*<'<'>, <'>'>, <'>='>, <'<='>*)
+(*<+>, <->*)
+(*<*>, </>, <%>*)
+
+Expression = OrExpr ;
+
+OrExpr = AndExpr, { "||", AndExpr } ;
+AndExpr = EqualExpr, { "&&", EqualExpr } ;
+EqualExpr = CompExpr, [ ("==" | "!="), CompExpr ] ;
+CompExpr = AddExpr, [ (">" | "<" | ">=" | "<="), AddExpr ] ;
+AddExpr = MultpExpr, { ("+" | "-"), MultpExpr } ;
+MultpExpr = ReturnExpr, { ("*", "/", "%"), ReturnExpr } ;
+
+(* Lida com funções ou átomos da gramática *)
+ReturnExpr = CallFunction | Atom ;
+
+(* VER ISSO DPS *)
+CallFunction = Identifier, Atom, { Atom } ;
+Atom = Literal | List | Identifier | "(", Expression, ")" ;
+
 (* DECLARAÇÕES *)
-(* obs: no momento estamos usando Value na declaração de uma variável, mas no futuro deve ser uma expressão *)
-AssignOperators = "=" | "+=" | "-=" | "*=" | "/=" ; 
-Assignment = Identifier, AssignOperators, Value ;
+FuncAnnotattion = Identifier, "::", Type, { "->", Type } ;
 
-(* SÍMBOLOS *)
-Plus = "+" ;
-Minus = "-" ;
-Asterisk = "*" ;
-Divide = "/" ;
-Comma = "," ;
-Greater = ">" ;
-Less = "<" ;
-Percent = "%" ;
-Equals = "=" ;
+AssignOperators = "=" | "+=" | "-=" | "*=" | "/=" ;
+Assignment = Identifier, AssignOperators, Expression ;
 
+Statement = FuncAnnotation | Assignment | Expression ;
+
+(* PODE SER VAZIO TAMBÉM *)
+Program = { Statement } 
