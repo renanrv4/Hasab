@@ -106,7 +106,9 @@ addToken token (Right tokens) = Right (token : tokens)
 {-
 
 Ainda falta implementar a lógica pra esses:
-==, !=, >=, <=, &&, ||, ::, ->
+==, !=, >=, <=, <, >, &&, ||, ::, ->, "string", ",", "(", ")", "[", "]"
+
+tem que tomar cuidado com os que tem caractére em comum com outros tokens, pq não dá pra adicionar direto
 
 -}
 
