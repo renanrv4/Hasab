@@ -1,0 +1,19 @@
+# Cabal
+dist-newstyle/
+*.hi
+*.o
+
+# GHCi
+.ghci
+.ghci_history
+
+# Haskell Language Server
+.hls/
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

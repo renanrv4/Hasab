@@ -4,6 +4,7 @@ import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 import Data.Void (Void)
+import Control.Monad (void)
 import Control.Monad.Combinators.Expr
 
 -- Tipo base do Parser
@@ -14,8 +15,9 @@ type Parser = Parsec Void String
 --------------------------------------------------------------------------------
 
 -- Ignora espaços, tabulações, quebras de linha e comentários
+-- cada linha deve ser um statement então não podemos pular linhas
 sc :: Parser ()
-sc = L.space space1 (L.skipLineComment "--") (L.skipBlockComment "/*" "*/")
+sc = L.space (void $ oneOf " \t") (L.skipLineComment "--") (L.skipBlockComment "/*" "*/")
 
 -- Garante que após ler um token, os espaços à frente sejam consumidos
 lexeme :: Parser a -> Parser a
@@ -30,10 +32,16 @@ symbol = L.symbol sc
 --------------------------------------------------------------------------------
 
 pInteger :: Parser Integer
-pInteger = lexeme (L.signed sc L.decimal)
+pInteger = lexeme $ do
+    n <- L.signed sc L.decimal
+    notFollowedBy (alphaNumChar <|> char '_')
+    return n
 
 pFloat :: Parser Double
-pFloat = lexeme (L.signed sc L.float)
+pFloat = lexeme $ do
+    n <- L.signed sc L.float
+    notFollowedBy (alphaNumChar <|> char '_')
+    return n
 
 pBoolean :: Parser Bool
 pBoolean = lexeme ((True <$ string "true") <|> (False <$ string "false"))
@@ -167,4 +175,9 @@ pStatement =
     <|> pExpression
 
 pProgram :: Parser [AST]
-pProgram = sc *> many pStatement <* eof
+pProgram = do
+    sc
+    statements <- pStatement `sepEndBy` newline
+    sc
+    eof
+    return statements
