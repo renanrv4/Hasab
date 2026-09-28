@@ -132,7 +132,8 @@ pExpression = makeExprParser pReturnExpr operatorTable
 
 operatorTable :: [[Operator Parser AST]]
 operatorTable =
-  [ [ InfixL (BinaryOp "*" <$ symbol "*")
+  [ [ InfixR (BinaryOp "^" <$ symbol "^") ] -- Exponenciação é associativa à direita, então usamos InfixR 2 ^ 3 != 3 ^ 2 
+  , [ InfixL (BinaryOp "*" <$ symbol "*")
     , InfixL (BinaryOp "/" <$ symbol "/")
     , InfixL (BinaryOp "%" <$ symbol "%") ]
   , [ InfixL (BinaryOp "+" <$ symbol "+")
