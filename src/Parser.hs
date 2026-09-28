@@ -121,7 +121,7 @@ pCallFunction = do
     name <- pIdentifier
     symbol "("
     -- Lê 1 ou mais átomos como argumentos da função
-    args <- pExpression `sepBy` symbol ","
+    args <- pExpression `sepBy1` symbol ","
     symbol ")"
     return (Call name args)
 
