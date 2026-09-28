@@ -39,3 +39,5 @@ sqrt x
 log x
 cos (x + 1)
 sqrt x^2 + y^2
+sqrt (x^2 + y^2)
+pow (2, 3)

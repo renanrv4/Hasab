@@ -119,8 +119,10 @@ pList = do
 pCallFunction :: Parser AST
 pCallFunction = do
     name <- pIdentifier
+    symbol "("
     -- Lê 1 ou mais átomos como argumentos da função
-    args <- some pAtom
+    args <- pExpression `sepBy` symbol ","
+    symbol ")"
     return (Call name args)
 
 pReturnExpr :: Parser AST
