@@ -6,6 +6,7 @@ x
 2 + 3 * 4
 (2 + 3) * 4
 [1, 2, 3]
+[[1, 2], [3, 1]]
 true && 12
 (false && true) || true
 12 % 3
@@ -28,6 +29,8 @@ cos (x + 1)
 sqrt (x^2 + y^2)
 pow (2, 3)
 sqrt x^2 + y^2
+
+
 sin x
 sqrt x
 log x

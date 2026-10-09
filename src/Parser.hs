@@ -50,7 +50,7 @@ pString :: Parser String
 pString = lexeme (char '"' *> manyTill L.charLiteral (char '"'))
 
 -- Literal = String | Float | Integer | Boolean
--- Nota: Float vem antes de Integer para o parser tentar ler o ponto flutuante primeiro
+-- Obs: Float vem antes de Integer para o parser tentar ler o ponto flutuante primeiro
 pLiteral :: Parser AST
 pLiteral = 
         (LitString <$> pString)
@@ -81,7 +81,7 @@ pType = lexeme $
         return ("[" ++ t ++ "]")
 
 --------------------------------------------------------------------------------
--- 4. ESTRUTURA DE AST (Árvore Sintática Abstrata de Apoio)
+-- 4. ESTRUTURA DE AST
 --------------------------------------------------------------------------------
 
 data AST 
@@ -98,7 +98,7 @@ data AST
     deriving (Show, Eq)
 
 --------------------------------------------------------------------------------
--- 5. EXPRESSÕES E PRECEDÊNCIA (Baseado na sua cascata EBNF)
+-- 5. EXPRESSÕES E PRECEDÊNCIA
 --------------------------------------------------------------------------------
 
 pAtom :: Parser AST

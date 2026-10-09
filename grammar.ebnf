@@ -37,6 +37,7 @@ Type = "Int" | "Float" | "String" | "Bool" | "[", Type , "]" ;
 (*<'<'>, <'>'>, <'>='>, <'<='>*)
 (*<+>, <->*)
 (*<*>, </>, <%>*)
+(*<^>*)
 
 Expression = OrExpr ;
 
@@ -45,7 +46,8 @@ AndExpr = EqualExpr, { "&&", EqualExpr } ;
 EqualExpr = CompExpr, [ ("==" | "!="), CompExpr ] ;
 CompExpr = AddExpr, [ (">" | "<" | ">=" | "<="), AddExpr ] ;
 AddExpr = MultpExpr, { ("+" | "-"), MultpExpr } ;
-MultpExpr = ReturnExpr, { ("*", "/", "%"), ReturnExpr } ;
+MultpExpr = ExpExpr, { ("*", "/", "%"), ExpExpr } ;
+ExpExpr = ReturnExpr, { "^", ReturnExpr } ;
 
 (* Lida com funções ou átomos da gramática *)
 ReturnExpr = CallFunction | Atom ;
