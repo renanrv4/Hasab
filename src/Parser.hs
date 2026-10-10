@@ -1,5 +1,6 @@
 module Parser where
 
+import AST
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -31,35 +32,35 @@ symbol = L.symbol sc
 -- 2. TIPOS BÁSICOS E LITERAIS
 --------------------------------------------------------------------------------
 
-pInteger :: Parser Integer
+pInteger :: Parser Expr
 pInteger = lexeme $ do
     n <- L.signed sc L.decimal
     notFollowedBy (alphaNumChar <|> char '_')
-    return n
+    return (LitInt n)
 
-pFloat :: Parser Double
+pFloat :: Parser Expr
 pFloat = lexeme $ do
     n <- L.signed sc L.float
     notFollowedBy (alphaNumChar <|> char '_')
-    return n
+    return (LitFloat n)
 
-pBoolean :: Parser Bool
+pBoolean :: Parser Expr
 pBoolean = lexeme $ do
     value <- (True <$ string "true") <|> (False <$ string "false")
     notFollowedBy (alphaNumChar <|> char '_')
-    return value
+    return (LitBool value)
 
-pString :: Parser String
-pString = lexeme (char '"' *> manyTill L.charLiteral (char '"'))
+pString :: Parser Expr
+pString = LitString <$> lexeme (char '"' *> manyTill L.charLiteral (char '"'))
 
 -- Literal = String | Float | Integer | Boolean
 -- Obs: Float vem antes de Integer para o parser tentar ler o ponto flutuante primeiro
-pLiteral :: Parser AST
+pLiteral :: Parser Expr
 pLiteral = 
-        (LitString <$> pString)
-    <|> try (LitFloat <$> pFloat)
-    <|> (LitInt <$> pInteger)
-    <|> (LitBool <$> pBoolean)
+        pString
+    <|> try pFloat
+    <|> try pInteger
+    <|> try pBoolean
 
 --------------------------------------------------------------------------------
 -- 3. IDENTIFICADORES E TIPOS
@@ -84,36 +85,17 @@ pType = lexeme $
         return ("[" ++ t ++ "]")
 
 --------------------------------------------------------------------------------
--- 4. ESTRUTURA DE AST
+-- 4. EXPRESSÕES E PRECEDÊNCIA
 --------------------------------------------------------------------------------
 
-data AST 
-    = LitInt Integer
-    | LitFloat Double
-    | LitBool Bool
-    | LitString String
-    | Var String
-    | ListExpr [AST]
-    | Call String [AST]
-    | BinaryOp String AST AST
-    | Assignment String String AST
-    | FuncAnnot String [String]
-    | FuncDef String [String] AST
-    | Let [AST] AST
-    deriving (Show, Eq)
-
---------------------------------------------------------------------------------
--- 5. EXPRESSÕES E PRECEDÊNCIA
---------------------------------------------------------------------------------
-
-pAtom :: Parser AST
+pAtom :: Parser Expr
 pAtom = 
         try pLiteral
     <|> pList
     <|> (Var <$> pIdentifier)
     <|> between (symbol "(") (symbol ")") pExpression
 
-pList :: Parser AST
+pList :: Parser Expr
 pList = do
     symbol "["
     elements <- pExpression `sepBy` symbol ","
@@ -133,7 +115,7 @@ pPlusOperator = try $ lexeme $ do
     notFollowedBy (char '+')
     return "+"
 
-pLet :: Parser AST
+pLet :: Parser Expr
 pLet = do
     symbol "let"
     assignments <- pAssignment `sepBy1` symbol ";"
@@ -142,7 +124,7 @@ pLet = do
     return (Let assignments expr)
 
 -- CallFunction = Identifier, Atom, { Atom }
-pCallFunction :: Parser AST
+pCallFunction :: Parser Expr
 pCallFunction = do
     name <- pIdentifier
     symbol "("
@@ -151,17 +133,17 @@ pCallFunction = do
     symbol ")"
     return (Call name args)
 
-pReturnExpr :: Parser AST
+pReturnExpr :: Parser Expr
 pReturnExpr = 
         try pLet
     <|> try pCallFunction 
     <|> pAtom
 
 -- Tabela de operadores usando makeExprParser do Megaparsec para substituir a cascata manual
-pExpression :: Parser AST
+pExpression :: Parser Expr
 pExpression = makeExprParser pReturnExpr operatorTable
 
-operatorTable :: [[Operator Parser AST]]
+operatorTable :: [[Operator Parser Expr]]
 operatorTable =
   [ [ InfixR (BinaryOp "^" <$ symbol "^") ] -- Exponenciação é associativa à direita, então usamos InfixR 2 ^ 3 != 3 ^ 2 
   , [ InfixL (BinaryOp "*" <$ symbol "*")
@@ -182,11 +164,11 @@ operatorTable =
   ]
 
 --------------------------------------------------------------------------------
--- 6. DECLARAÇÕES E PROGRAMA
+-- 5. DECLARAÇÕES E PROGRAMA
 --------------------------------------------------------------------------------
 
 -- FuncAnnotation = Identifier, "::", Type, { "->", Type }
-pFuncAnnotation :: Parser AST
+pFuncAnnotation :: Parser Declaration
 pFuncAnnotation = do
     name <- pIdentifier
     symbol "::"
@@ -195,7 +177,7 @@ pFuncAnnotation = do
     return (FuncAnnot name (t1 : ts))
 
 -- FuncDef = Identifier, { Identifier }, "=", Expression
-pFuncDef :: Parser AST
+pFuncDef :: Parser Declaration
 pFuncDef = do
     name <- pIdentifier
     params <- some pIdentifier
@@ -204,22 +186,22 @@ pFuncDef = do
     return (FuncDef name params body)
 
 -- Assignment = Identifier, AssignOperators, Expression
-pAssignment :: Parser AST
+pAssignment :: Parser Declaration
 pAssignment = do
     name <- pIdentifier
     op <- symbol "=" <|> symbol "+=" <|> symbol "-=" <|> symbol "*=" <|> symbol "/="
     expr <- pExpression
     return (Assignment name op expr)
 
-pStatement :: Parser AST
+pStatement :: Parser Statement
 pStatement = 
-        try pFuncAnnotation
-    <|> try pLet
-    <|> try pFuncDef
-    <|> try pAssignment
-    <|> pExpression
+        try (DeclarationStatement <$> pFuncAnnotation)
+    <|> try (ExprStatement <$> pLet)
+    <|> try (DeclarationStatement <$> pFuncDef)
+    <|> try (DeclarationStatement <$> pAssignment)
+    <|> (ExprStatement <$> pExpression)
 
-pProgram :: Parser [AST]
+pProgram :: Parser Program
 pProgram = do
     sc
     statements <- pStatement `sepEndBy` newline
