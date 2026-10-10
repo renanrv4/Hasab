@@ -36,6 +36,8 @@ distancia x y = sqrt(x^2 + y^2)
 1 : 2 : []
 x ++ y
 f :: Int -> Int
+let a = 2; s = 3 in a + s
+f x = let a = x + 1; b = a * 2 in b
 
 sqrt x^2 + y^2
 sin x

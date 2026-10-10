@@ -44,7 +44,10 @@ pFloat = lexeme $ do
     return n
 
 pBoolean :: Parser Bool
-pBoolean = lexeme ((True <$ string "true") <|> (False <$ string "false"))
+pBoolean = lexeme $ do
+    value <- (True <$ string "true") <|> (False <$ string "false")
+    notFollowedBy (alphaNumChar <|> char '_')
+    return value
 
 pString :: Parser String
 pString = lexeme (char '"' *> manyTill L.charLiteral (char '"'))
@@ -96,6 +99,7 @@ data AST
     | Assignment String String AST
     | FuncAnnot String [String]
     | FuncDef String [String] AST
+    | Let [AST] AST
     deriving (Show, Eq)
 
 --------------------------------------------------------------------------------
@@ -129,6 +133,14 @@ pPlusOperator = try $ lexeme $ do
     notFollowedBy (char '+')
     return "+"
 
+pLet :: Parser AST
+pLet = do
+    symbol "let"
+    assignments <- pAssignment `sepBy1` symbol ";"
+    symbol "in"
+    expr <- pExpression
+    return (Let assignments expr)
+
 -- CallFunction = Identifier, Atom, { Atom }
 pCallFunction :: Parser AST
 pCallFunction = do
@@ -140,7 +152,10 @@ pCallFunction = do
     return (Call name args)
 
 pReturnExpr :: Parser AST
-pReturnExpr = try pCallFunction <|> pAtom
+pReturnExpr = 
+        try pLet
+    <|> try pCallFunction 
+    <|> pAtom
 
 -- Tabela de operadores usando makeExprParser do Megaparsec para substituir a cascata manual
 pExpression :: Parser AST
@@ -199,6 +214,7 @@ pAssignment = do
 pStatement :: Parser AST
 pStatement = 
         try pFuncAnnotation
+    <|> try pLet
     <|> try pFuncDef
     <|> try pAssignment
     <|> pExpression
