@@ -95,6 +95,7 @@ data AST
     | BinaryOp String AST AST
     | Assignment String String AST
     | FuncAnnot String [String]
+    | FuncDef String [String] AST
     deriving (Show, Eq)
 
 --------------------------------------------------------------------------------
@@ -114,6 +115,19 @@ pList = do
     elements <- pExpression `sepBy` symbol ","
     symbol "]"
     return (ListExpr elements)
+
+pConcatOperator :: Parser String
+pConcatOperator = lexeme $ do
+    _ <- char ':'
+    notFollowedBy (char ':')
+    sc
+    return ":"
+
+pPlusOperator :: Parser String
+pPlusOperator = try $ lexeme $ do
+    _ <- char '+'
+    notFollowedBy (char '+')
+    return "+"
 
 -- CallFunction = Identifier, Atom, { Atom }
 pCallFunction :: Parser AST
@@ -138,8 +152,10 @@ operatorTable =
   , [ InfixL (BinaryOp "*" <$ symbol "*")
     , InfixL (BinaryOp "/" <$ symbol "/")
     , InfixL (BinaryOp "%" <$ symbol "%") ]
-  , [ InfixL (BinaryOp "+" <$ symbol "+")
+  , [ InfixL (BinaryOp "+" <$ pPlusOperator)
     , InfixL (BinaryOp "-" <$ symbol "-") ]
+  , [ InfixR (BinaryOp ":" <$ pConcatOperator) ]
+  , [ InfixR (BinaryOp "++" <$ symbol "++") ]
   , [ InfixL (BinaryOp ">=" <$ symbol ">=")
     , InfixL (BinaryOp "<=" <$ symbol "<=")
     , InfixL (BinaryOp ">"  <$ symbol ">")
@@ -163,6 +179,15 @@ pFuncAnnotation = do
     ts <- many (symbol "->" *> pType)
     return (FuncAnnot name (t1 : ts))
 
+-- FuncDef = Identifier, { Identifier }, "=", Expression
+pFuncDef :: Parser AST
+pFuncDef = do
+    name <- pIdentifier
+    params <- some pIdentifier
+    symbol "="
+    body <- pExpression
+    return (FuncDef name params body)
+
 -- Assignment = Identifier, AssignOperators, Expression
 pAssignment :: Parser AST
 pAssignment = do
@@ -174,6 +199,7 @@ pAssignment = do
 pStatement :: Parser AST
 pStatement = 
         try pFuncAnnotation
+    <|> try pFuncDef
     <|> try pAssignment
     <|> pExpression
 

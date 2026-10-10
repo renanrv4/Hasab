@@ -28,9 +28,16 @@ multFloat :: Float -> Float
 cos (x + 1)
 sqrt (x^2 + y^2)
 pow (2, 3)
+distancia :: Float -> Float -> Float
+distancia x y = sqrt(x^2 + y^2)
+[1] ++ [2] ++ [3]
+1 : [2, 3]
+[1, 2] ++ [3, 4]
+1 : 2 : []
+x ++ y
+f :: Int -> Int
+
 sqrt x^2 + y^2
-
-
 sin x
 sqrt x
 log x
