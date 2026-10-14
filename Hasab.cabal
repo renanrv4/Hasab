@@ -70,7 +70,8 @@ executable Hasab
     build-depends:
         base,
         megaparsec,
-        parser-combinators
+        parser-combinators,
+        HUnit
 
     -- Directories containing source files.
     hs-source-dirs:

@@ -79,9 +79,9 @@ pType = lexeme $
     <|> (string "String") 
     <|> (string "Bool")
     <|> do
-        symbol "["
+        _ <- symbol "["
         t <- pType
-        symbol "]"
+        _ <- symbol "]"
         return ("[" ++ t ++ "]")
 
 --------------------------------------------------------------------------------
@@ -97,9 +97,9 @@ pAtom =
 
 pList :: Parser Expr
 pList = do
-    symbol "["
+    _ <- symbol "["
     elements <- pExpression `sepBy` symbol ","
-    symbol "]"
+    _ <- symbol "]"
     return (ListExpr elements)
 
 pConcatOperator :: Parser String
@@ -117,9 +117,9 @@ pPlusOperator = try $ lexeme $ do
 
 pLet :: Parser Expr
 pLet = do
-    symbol "let"
+    _ <- symbol "let"
     assignments <- pAssignment `sepBy1` symbol ";"
-    symbol "in"
+    _ <- symbol "in"
     expr <- pExpression
     return (Let assignments expr)
 
@@ -127,10 +127,10 @@ pLet = do
 pCallFunction :: Parser Expr
 pCallFunction = do
     name <- pIdentifier
-    symbol "("
+    _ <- symbol "("
     -- Lê 1 ou mais átomos como argumentos da função
     args <- pExpression `sepBy1` symbol ","
-    symbol ")"
+    _ <- symbol ")"
     return (Call name args)
 
 pReturnExpr :: Parser Expr
@@ -171,7 +171,7 @@ operatorTable =
 pFuncAnnotation :: Parser Declaration
 pFuncAnnotation = do
     name <- pIdentifier
-    symbol "::"
+    _ <- symbol "::"
     t1 <- pType
     ts <- many (symbol "->" *> pType)
     return (FuncAnnot name (t1 : ts))
@@ -181,7 +181,7 @@ pFuncDef :: Parser Declaration
 pFuncDef = do
     name <- pIdentifier
     params <- some pIdentifier
-    symbol "="
+    _ <- symbol "="
     body <- pExpression
     return (FuncDef name params body)
 
