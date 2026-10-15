@@ -87,6 +87,20 @@ testesAST = TestLabel "Testes de AST Exata" $ TestList
                         (BinaryOp "^" (Var "y") (LitInt 2))
                     ])))
 
+    , testAST "if (x > 0) then x else 0"
+        (ExprStatement
+            (IfThenElse
+                (BinaryOp ">" (Var "x") (LitInt 0))
+                (Var "x")
+                (LitInt 0)))
+            
+    , testAST "if (x > 0) then x + 1 else x - 1"
+        (ExprStatement
+            (IfThenElse
+                (BinaryOp ">" (Var "x") (LitInt 0))
+                    (BinaryOp "+" (Var "x") (LitInt 1))
+                    (BinaryOp "-" (Var "x") (LitInt 1))))
+                    
     , testAST "let a = 2; s = 3 in a + s"
         (ExprStatement
             (Let
@@ -125,6 +139,7 @@ casosSucesso =
     , "true"
     , "false"
     , "x"
+    , "x + 1"
     , "2 + 3 * 4"
     , "(2 + 3) * 4"
     , "[1, 2, 3]"
@@ -159,6 +174,9 @@ casosSucesso =
     , "f :: Int -> Int"
     , "let a = 2; s = 3 in a + s"
     , "f x = let a = x + 1; b = a * 2 in b"
+    , "if (x > 0) then x else 0"
+    , "if true then 1 else 0"
+    , "f x = if x > 0 then x + 1 else x - 1"
     ]
 
 testesSucesso :: Test
@@ -211,6 +229,7 @@ casosFalha =
     , "123 x = 3"
     , "12 = 3 + 1"
     , "asse@ = \"teste\""
+    , "if x > 0 thne x else -x"
     ]
 
 testesFalha :: Test

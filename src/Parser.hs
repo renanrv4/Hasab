@@ -123,6 +123,16 @@ pLet = do
     expr <- pExpression
     return (Let assignments expr)
 
+pIfThenElse :: Parser Expr
+pIfThenElse = do
+    _ <- symbol "if"
+    cond <- pExpression
+    _ <- symbol "then"
+    thenExpr <- pExpression
+    _ <- symbol "else"
+    elseExpr <- pExpression
+    return (IfThenElse cond thenExpr elseExpr)
+
 -- CallFunction = Identifier, Atom, { Atom }
 pCallFunction :: Parser Expr
 pCallFunction = do
@@ -136,6 +146,7 @@ pCallFunction = do
 pReturnExpr :: Parser Expr
 pReturnExpr = 
         try pLet
+    <|> try pIfThenElse
     <|> try pCallFunction 
     <|> pAtom
 

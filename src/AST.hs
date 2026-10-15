@@ -14,6 +14,7 @@ data Expr
     | Call String [Expr]
     | BinaryOp String Expr Expr
     | Let [Declaration] Expr
+    | IfThenElse Expr Expr Expr
     deriving (Show, Eq)
 
 data Declaration
