@@ -2,116 +2,249 @@ module Main where
 
 import Parser
 import AST
-import Text.Megaparsec
+import Text.Megaparsec (parse, errorBundlePretty, eof)
 import Test.HUnit
 import Data.Either (isRight, isLeft)
 import System.Exit (exitFailure, exitSuccess)
 
--- | Função auxiliar para parsear uma única linha.
--- Usamos `sc *> pStatement <* eof` para garantir que ele leia a linha toda
--- e não deixe lixo (ou caracteres inválidos) para trás.
+--------------------------------------------------------------------------------
+-- 1. FUNCOES AUXILIARES
+--------------------------------------------------------------------------------
+
+-- Analisa uma unica instrucao e exige que toda a entrada seja consumida.
 parseLine :: String -> Either String Statement
-parseLine input = case parse (sc *> pStatement <* eof) "<test>" input of
-    Left err -> Left (errorBundlePretty err)
-    Right ast -> Right ast
+parseLine input =
+    case parse (sc *> pStatement <* eof) "<test>" input of
+        Left err  -> Left (errorBundlePretty err)
+        Right ast -> Right ast
+
+-- Analisa um programa completo.
+-- Usado, por exemplo, para testar arquivos que contem apenas comentarios.
+parseSource :: String -> Either String Program
+parseSource input =
+    case parse pProgram "<test>" input of
+        Left err  -> Left (errorBundlePretty err)
+        Right ast -> Right ast
 
 --------------------------------------------------------------------------------
--- 1. TESTES DE IGUALDADE
+-- 2. TESTES DE AST EXATA
 --------------------------------------------------------------------------------
+
 testesAST :: Test
 testesAST = TestLabel "Testes de AST Exata" $ TestList
-    [ TestCase $ assertEqual "Parse Inteiro" 
-        (Right (ExprStatement (LitInt 42))) (parseLine "42")
-        
-    , TestCase $ assertEqual "Parse Float" 
-        (Right (ExprStatement (LitFloat 3.14))) (parseLine "3.14")
-        
-    , TestCase $ assertEqual "Precedencia: 2 + 3 * 4" 
-        (Right (ExprStatement (BinaryOp "+" (LitInt 2) (BinaryOp "*" (LitInt 3) (LitInt 4))))) 
-        (parseLine "2 + 3 * 4")
-        
-    , TestCase $ assertEqual "Anotacao de Funcao" 
-        (Right (DeclarationStatement (FuncAnnot "somaLista" ["[Int]", "Int"]))) 
-        (parseLine "somaLista :: [Int] -> Int")
-        
-    , TestCase $ assertEqual "Atribuicao Composta" 
-        (Right (DeclarationStatement (Assignment "x" "+=" (BinaryOp "*" (LitInt 12) (LitInt 3))))) 
-        (parseLine "x += 12 * 3")
+    [ testAST "42"
+        (ExprStatement (LitInt 42))
+
+    , testAST "3.14"
+        (ExprStatement (LitFloat 3.14))
+
+    , testAST "2 + 3 * 4"
+        (ExprStatement
+            (BinaryOp "+" (LitInt 2)
+                (BinaryOp "*" (LitInt 3) (LitInt 4))))
+
+    , testAST "(2 + 3) * 4"
+        (ExprStatement
+            (BinaryOp "*"
+                (BinaryOp "+" (LitInt 2) (LitInt 3))
+                (LitInt 4)))
+
+    , testAST "[[1, 2], [3, 1]]"
+        (ExprStatement
+            (ListExpr
+                [ ListExpr [LitInt 1, LitInt 2]
+                , ListExpr [LitInt 3, LitInt 1]
+                ]))
+
+    , testAST "3 ^ 2 ^ 4"
+        (ExprStatement
+            (BinaryOp "^" (LitInt 3)
+                (BinaryOp "^" (LitInt 2) (LitInt 4))))
+
+    , testAST "[1] ++ [2] ++ [3]"
+        (ExprStatement
+            (BinaryOp "++"
+                (ListExpr [LitInt 1])
+                (BinaryOp "++"
+                    (ListExpr [LitInt 2])
+                    (ListExpr [LitInt 3]))))
+
+    , testAST "somaLista :: [Int] -> Int"
+        (DeclarationStatement
+            (FuncAnnot "somaLista" ["[Int]", "Int"]))
+
+    , testAST "x += 12 * 3"
+        (DeclarationStatement
+            (Assignment "x" "+="
+                (BinaryOp "*" (LitInt 12) (LitInt 3))))
+
+    , testAST "distancia x y = sqrt(x^2 + y^2)"
+        (DeclarationStatement
+            (FuncDef "distancia" ["x", "y"]
+                (Call "sqrt"
+                    [ BinaryOp "+"
+                        (BinaryOp "^" (Var "x") (LitInt 2))
+                        (BinaryOp "^" (Var "y") (LitInt 2))
+                    ])))
+
+    , testAST "let a = 2; s = 3 in a + s"
+        (ExprStatement
+            (Let
+                [ Assignment "a" "=" (LitInt 2)
+                , Assignment "s" "=" (LitInt 3)
+                ]
+                (BinaryOp "+" (Var "a") (Var "s"))))
+
+    , testAST "f x = let a = x + 1; b = a * 2 in b"
+        (DeclarationStatement
+            (FuncDef "f" ["x"]
+                (Let
+                    [ Assignment "a" "="
+                        (BinaryOp "+" (Var "x") (LitInt 1))
+                    , Assignment "b" "="
+                        (BinaryOp "*" (Var "a") (LitInt 2))
+                    ]
+                    (Var "b"))))
     ]
+
+testAST :: String -> Statement -> Test
+testAST input expected = TestCase $
+    assertEqual
+        ("AST incorreta para: " ++ input)
+        (Right expected)
+        (parseLine input)
+
 --------------------------------------------------------------------------------
--- 2. CASOS DE SUCESSO (Retirados do inputs.txt)
+-- 3. CASOS QUE DEVEM SER ACEITOS
 --------------------------------------------------------------------------------
+
 casosSucesso :: [String]
-casosSucesso = 
-    [ "true"
+casosSucesso =
+    [ "42"
+    , "3.14"
+    , "true"
     , "false"
     , "x"
+    , "2 + 3 * 4"
     , "(2 + 3) * 4"
     , "[1, 2, 3]"
+    , "[[1, 2], [3, 1]]"
     , "true && 12"
     , "(false && true) || true"
     , "12 % 3"
     , "\"teste\""
+    , "x += 12 * 3"
     , "x = x + y"
     , "x == x"
-    , "123 + 3 -- adasdklasd"     -- Testa se o consumidor (sc) lida com comentário no final
+    , "123 + 3 -- adasdklasd"
     , "3.14 + 2 + 1.23"
     , "\"asm,dad\" + \"askjdw\""
     , "-12"
+    , "somaLista :: [Int] -> Int"
     , "concatenation :: [String] -> String"
+    , "multFloat :: Float -> Float"
     , "3 ^ 2"
+    , "3 * 2 * 4"
+    , "3 ^ 2 ^ 4"
     , "cos (x + 1)"
+    , "sqrt (x^2 + y^2)"
     , "pow (2, 3)"
+    , "distancia :: Float -> Float -> Float"
+    , "distancia x y = sqrt(x^2 + y^2)"
+    , "[1] ++ [2] ++ [3]"
+    , "1 : [2, 3]"
+    , "[1, 2] ++ [3, 4]"
+    , "1 : 2 : []"
+    , "x ++ y"
+    , "f :: Int -> Int"
+    , "let a = 2; s = 3 in a + s"
+    , "f x = let a = x + 1; b = a * 2 in b"
     ]
 
 testesSucesso :: Test
-testesSucesso = TestLabel "Casos de Sucesso" $TestList$ map criarTesteSucesso casosSucesso
+testesSucesso = TestLabel "Casos de Sucesso" $
+    TestList (map criarTesteSucesso casosSucesso)
   where
-    criarTesteSucesso input = TestCase $ 
-        assertBool ("Deveria parsear com sucesso: " ++ input) (isRight $ parseLine input)
+    criarTesteSucesso input = TestCase $
+        assertBool
+            ("Deveria aceitar: " ++ input)
+            (isRight (parseLine input))
+
+-- Um comentario isolado nao produz uma instrucao.
+testeComentarioIsolado :: Test
+testeComentarioIsolado = TestCase $
+    assertEqual "Comentario isolado gera programa vazio"
+        (Right [])
+        (parseSource "--comentario")
+
+-- Um programa vazio tambem deve ser aceito.
+testeProgramaVazio :: Test
+testeProgramaVazio = TestCase $
+    assertEqual "Programa vazio"
+        (Right [])
+        (parseSource "")
 
 --------------------------------------------------------------------------------
--- 3. CASOS DE FALHA SINTÁTICA (Retirados do inputs.txt)
+-- 4. CASOS QUE DEVEM SER REJEITADOS
 --------------------------------------------------------------------------------
+
 casosFalha :: [String]
-casosFalha = 
-    [ "sin x"         -- Faltam parênteses na chamada de função (exigido pelo seu pCallFunction)
-    , "2 +"           -- Operador sem termo à direita
-    , "(2 + 3"        -- Parêntese aberto, mas não fechado
-    , "[1, 2"         -- Lista não fechada
-    , "x ="           -- Atribuição sem valor
-    , "123abc"        -- Identificador inválido (número colado em letra, pInteger vai barrar)
-    , "foo(1,)"       -- Vírgula sobrando nos argumentos
-    , "....,,,,"      -- Símbolos aleatórios
-    , "123_abc"       -- Número colado em underscore
-    , "3.14abc"       -- Float colado em letra
-    , "2a + 3"        -- Variável iniciando com número em vez de letra
-    , "12 = 3 + 1"    -- Tentando atribuir a um literal (pAssignment exige pIdentifier na esquerda)
-    , "asse@ = \"t\"" -- Caractere inválido (@) no nome da variável
+casosFalha =
+    [ "sqrt x^2 + y^2"
+    , "sin x"
+    , "sqrt x"
+    , "log x"
+    , "2 +"
+    , "(2 + 3"
+    , "[1, 2"
+    , "x ="
+    , "123abc"
+    , "foo(1,)"
+    , "foo(,1)"
+    , "....,,,,"
+    , "3 ** 2"
+    , "123_abc"
+    , "123abs_"
+    , "3.14abc"
+    , "2a + 3"
+    , "123x = 3"
+    , "123 x = 3"
+    , "12 = 3 + 1"
+    , "asse@ = \"teste\""
     ]
 
 testesFalha :: Test
-testesFalha = TestLabel "Casos de Erro Sintático" $TestList$ map criarTesteFalha casosFalha
+testesFalha = TestLabel "Casos de Falha Sintatica" $
+    TestList (map criarTesteFalha casosFalha)
   where
-    criarTesteFalha input = TestCase $ 
-        assertBool ("Deveria falhar ao parsear: " ++ input) (isLeft $ parseLine input)
+    criarTesteFalha input = TestCase $
+        assertBool
+            ("Deveria rejeitar: " ++ input)
+            (isLeft (parseLine input))
 
 --------------------------------------------------------------------------------
--- EXECUÇÃO
+-- 5. EXECUCAO
 --------------------------------------------------------------------------------
+
 todosTestes :: Test
-todosTestes = TestList [testesAST, testesSucesso, testesFalha]
+todosTestes = TestList
+    [ testesAST
+    , testesSucesso
+    , testeComentarioIsolado
+    , testeProgramaVazio
+    , testesFalha
+    ]
 
 main :: IO ()
 main = do
     putStrLn "\nIniciando bateria de testes com HUnit...\n"
+
     contagens <- runTestTT todosTestes
-    
-    -- Se houver falhas ou erros, quebra o build (retorna exitFailure para o terminal)
+
     if errors contagens + failures contagens == 0
         then do
-            putStrLn "\nTodos os testes passaram com sucesso!"
+            putStrLn "\nTodos os novos testes passaram com sucesso!"
             exitSuccess
         else do
-            putStrLn "\nAlguns testes falharam. Verifique os relatórios acima."
+            putStrLn "\nAlguns testes falharam. Verifique os relatorios acima."
             exitFailure
