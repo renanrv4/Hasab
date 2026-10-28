@@ -32,6 +32,9 @@ symbol = L.symbol sc
 -- 2. TIPOS BÁSICOS E LITERAIS
 --------------------------------------------------------------------------------
 
+reservedWords :: [String]
+reservedWords = ["let", "in", "if", "then", "else", "true", "false", "Int", "Float", "String", "Bool"]
+
 pInteger :: Parser Expr
 pInteger = lexeme $ do
     n <- L.signed sc L.decimal
@@ -62,15 +65,20 @@ pLiteral =
     <|> try pInteger
     <|> try pBoolean
 
+
+
 --------------------------------------------------------------------------------
 -- 3. IDENTIFICADORES E TIPOS
 --------------------------------------------------------------------------------
 
 pIdentifier :: Parser String
-pIdentifier = lexeme $ do
+pIdentifier = lexeme $ try $ do
     first <- letterChar
     rest <- many (alphaNumChar <|> char '_')
-    return (first : rest)
+    let name = first : rest
+    if name `elem` reservedWords
+        then fail $ "palavra reservada '" ++ name ++ "' nao pode ser usada como identificador"
+        else return name
 
 pType :: Parser String
 pType = lexeme $ 
@@ -118,7 +126,7 @@ pPlusOperator = try $ lexeme $ do
 pLet :: Parser Expr
 pLet = do
     _ <- symbol "let"
-    assignments <- pAssignment `sepBy1` symbol ";"
+    assignments <- pAssignment `sepEndBy1` symbol ";"
     _ <- symbol "in"
     expr <- pExpression
     return (Let assignments expr)

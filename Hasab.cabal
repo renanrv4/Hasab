@@ -71,7 +71,8 @@ executable Hasab
         base,
         megaparsec,
         parser-combinators,
-        HUnit
+        HUnit,
+        containers
 
     -- Directories containing source files.
     hs-source-dirs:
@@ -83,11 +84,12 @@ executable Hasab
 
 test-suite hasab-tests
     type:                exitcode-stdio-1.0
-    main-is:             Spec.hs
+    main-is:             TestType.hs
     hs-source-dirs:      test, src
     build-depends:
         base,
         HUnit,
         megaparsec,
-        parser-combinators
+        parser-combinators,
+        containers
     default-language:    Haskell2010
