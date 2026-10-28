@@ -53,6 +53,20 @@ extra-doc-files:    CHANGELOG.md
 common warnings
     ghc-options: -Wall
 
+library
+    hs-source-dirs:   src
+    exposed-modules:
+        AST
+        Parser
+        TypeChecker
+        Interpreter
+    build-depends:
+        base >=4.14 && <5,
+        megaparsec,
+        parser-combinators,
+        containers
+    default-language: Haskell2010
+
 executable Hasab
     -- Import common warning flags.
     import:           warnings
@@ -65,7 +79,11 @@ executable Hasab
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-
+    other-modules:
+        AST
+        Parser
+        TypeChecker
+        Interpreter
     -- Other library packages from which modules are imported.
     build-depends:
         base,
@@ -84,7 +102,7 @@ executable Hasab
 
 test-suite hasab-tests
     type:                exitcode-stdio-1.0
-    main-is:             TestType.hs
+    main-is:             TestInterpreter.hs
     hs-source-dirs:      test, src
     build-depends:
         base,

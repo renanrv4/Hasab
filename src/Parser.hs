@@ -18,7 +18,7 @@ type Parser = Parsec Void String
 -- Ignora espaços, tabulações, quebras de linha e comentários
 -- cada linha deve ser um statement então não podemos pular linhas
 sc :: Parser ()
-sc = L.space (void $ oneOf " \t") (L.skipLineComment "--") (L.skipBlockComment "/*" "*/")
+sc = L.space space1 (L.skipLineComment "--") (L.skipBlockComment "{-" "-}")
 
 -- Garante que após ler um token, os espaços à frente sejam consumidos
 lexeme :: Parser a -> Parser a
@@ -221,9 +221,4 @@ pStatement =
     <|> (ExprStatement <$> pExpression)
 
 pProgram :: Parser Program
-pProgram = do
-    sc
-    statements <- pStatement `sepEndBy` newline
-    sc
-    eof
-    return statements
+pProgram = do sc *> many (pStatement <* optional (symbol ";")) <* eof
