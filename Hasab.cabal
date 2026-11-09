@@ -102,7 +102,7 @@ executable Hasab
 
 test-suite hasab-tests
     type:                exitcode-stdio-1.0
-    main-is:             TestInterpreter.hs
+    main-is:             TestSuite.hs
     hs-source-dirs:      test, src
     build-depends:
         base,

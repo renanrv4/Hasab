@@ -1,4 +1,4 @@
-module Main where
+module TestParser where
 
 import Parser
 import AST
@@ -253,17 +253,3 @@ todosTestes = TestList
     , testeProgramaVazio
     , testesFalha
     ]
-
-main :: IO ()
-main = do
-    putStrLn "\nIniciando bateria de testes com HUnit...\n"
-
-    contagens <- runTestTT todosTestes
-
-    if errors contagens + failures contagens == 0
-        then do
-            putStrLn "\nTodos os novos testes passaram com sucesso!"
-            exitSuccess
-        else do
-            putStrLn "\nAlguns testes falharam. Verifique os relatorios acima."
-            exitFailure

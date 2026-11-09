@@ -1,4 +1,4 @@
-module Main where
+module TestInterpreter where
 
 import AST
 import Parser
@@ -189,9 +189,3 @@ todosTestes = TestList
     , testesMultilinha
     , testesErrosRuntime
     ]
-
-main :: IO ()
-main = do
-    putStrLn "\n=== Executando Testes de Semântica Operacional (Interpretador) ==="
-    _ <- runTestTT todosTestes
-    return ()

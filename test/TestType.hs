@@ -1,4 +1,4 @@
-module Main where
+module TestType where
 
 import AST
 import Parser
@@ -219,9 +219,3 @@ todosTestes = TestList
     , testesLet
     , testesOperadores
     ]
-
-main :: IO ()
-main = do
-    putStrLn "=== Executando Suíte de Testes de Expressões do Hasab ==="
-    _ <- runTestTT todosTestes
-    return ()
