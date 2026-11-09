@@ -70,7 +70,7 @@ evalExpr env expr = case expr of
                 else do
                     -- Associa parâmetros aos valores reais e combina com a clausura e ambiente atual
                     let paramBindings = Map.fromList (zip params argVals)
-                    let localEnv = Map.union paramBindings (Map.union env closureEnv)
+                    let localEnv = Map.union paramBindings closureEnv
                     evalExpr localEnv body
 
         Just _  -> Left $ "Erro de execução: '" ++ name ++ "' não é uma função."
@@ -150,7 +150,8 @@ evalLetDecl env decl = case decl of
         Right (Map.insert name finalVal env)
     
     FuncDef name params body ->
-        Right (Map.insert name (VFunction params body env) env)
+        let recursiveEnv = Map.insert name (VFunction params body recursiveEnv) env
+        in Right recursiveEnv
         
     FuncAnnot _ _ -> Right env
 
@@ -184,8 +185,8 @@ evalStatement env stmt = case stmt of
             Right (VUnit, Map.insert name finalVal env)
 
         FuncDef name params body ->
-            let closure = VFunction params body env
-            in Right (VUnit, Map.insert name closure env)
+            let recursiveEnv = Map.insert name (VFunction params body recursiveEnv) env
+            in Right (VUnit, recursiveEnv)
 
         FuncAnnot _ _ -> Right (VUnit, env)
 
