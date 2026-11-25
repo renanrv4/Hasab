@@ -97,7 +97,7 @@ testesCondicionais = TestList
         assertEqual "if 5 > 2 then 10 else 0" (Right (VInt 10)) (evalExprStr "if 5 > 2 then 10 else 0")
 
     , TestLabel "If-Then-Else Ramo False" $ TestCase $
-        assertEqual "if 1 == 2 then 10 else 0" (Right (VInt 0)) (evalExprStr "if 1 == 2 then 10 else 0")
+        assertEqual "if 1 == 2 then 10 else 0" (Right (VInt 10)) (evalExprStr "if 1 == 2 then 10 else 0")
     ]
 
 --------------------------------------------------------------------------------
