@@ -1,0 +1,26 @@
+-- Assinatura de função
+somaLista :: [Int] -> Int
+
+concatenation :: [String] -> String
+
+multFloat :: Float -> Float
+
+f :: Int -> Int
+
+-- Definição de função
+distancia :: Float -> Float -> Float
+
+distancia x y =
+    sqrt (x^2 + y^2)
+
+-- Definição sem assinatura
+dobro x =
+    x * 2
+
+-- Funções com mais de um parâmetro
+soma x y =
+    x + y
+
+-- Composição de chamadas
+distanciaOrigem x y =
+    sqrt (x^2 + y^2)

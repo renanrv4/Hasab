@@ -1,0 +1,103 @@
+# lists - Caso 1
+<
+[1, 2, 3]
+---
+[[1, 2], [3, 1]]
+---
+[1] ++ [2] ++ [3]
+---
+1 : [2, 3]
+---
+[1, 2] ++ [3, 4]
+---
+1 : 2 : []
+---
+x ++ y
+---
+x[i][j][k]
+---
+[]
+$ cabal run -v0 parser-test
+>
+[ ExprStatement
+    ( ListExpr
+        [ LitInt 1
+        , LitInt 2
+        , LitInt 3
+        ]
+    )
+, ExprStatement
+    ( ListExpr
+        [ ListExpr
+            [ LitInt 1
+            , LitInt 2
+            ]
+        , ListExpr
+            [ LitInt 3
+            , LitInt 1
+            ]
+        ]
+    )
+, ExprStatement
+    ( BinaryOp Concat
+        ( ListExpr
+            [ LitInt 1 ]
+        )
+        ( BinaryOp Concat
+            ( ListExpr
+                [ LitInt 2 ]
+            )
+            ( ListExpr
+                [ LitInt 3 ]
+            )
+        )
+    )
+, ExprStatement
+    ( BinaryOp Cons
+        ( LitInt 1 )
+        ( ListExpr
+            [ LitInt 2
+            , LitInt 3
+            ]
+        )
+    )
+, ExprStatement
+    ( BinaryOp Concat
+        ( ListExpr
+            [ LitInt 1
+            , LitInt 2
+            ]
+        )
+        ( ListExpr
+            [ LitInt 3
+            , LitInt 4
+            ]
+        )
+    )
+, ExprStatement
+    ( BinaryOp Cons
+        ( LitInt 1 )
+        ( BinaryOp Cons
+            ( LitInt 2 ) EmptyList
+        )
+    )
+, ExprStatement
+    ( BinaryOp Concat
+        ( Var "x" )
+        ( Var "y" )
+    )
+, ExprStatement
+    ( Index
+        ( Index
+            ( Index
+                ( Var "x" )
+                ( Var "i" )
+            )
+            ( Var "j" )
+        )
+        ( Var "k" )
+    )
+, ExprStatement EmptyList
+]
+>= 0
+

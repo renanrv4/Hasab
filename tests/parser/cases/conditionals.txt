@@ -1,0 +1,19 @@
+-- Condicional simples
+if (x > 0) then x else 0
+
+if true then 1 else 0
+
+-- Condicional em uma função
+f x =
+    if x > 0
+    then x + 1
+    else x - 1
+
+-- Condicionais aninhadas
+classificar x =
+    if x > 0
+    then
+        if x > 10
+        then 2
+        else 1
+    else 0

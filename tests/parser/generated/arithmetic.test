@@ -1,0 +1,106 @@
+# arithmetic - Caso 1
+<
+x
+---
+x + 1
+---
+2 + 3 * 4
+---
+(2 + 3) * 4
+---
+12 % 3
+---
+3.14 + 2 + 1.23
+---
+3 ^ 2
+---
+3 * 2 * 4
+---
+3 ^ 2 ^ 4
+---
+123 + 3 -- adasdklasd
+---
+x += 12 * 3
+---
+x = x + y
+$ cabal run -v0 parser-test
+>
+[ ExprStatement
+    ( Var "x" )
+, ExprStatement
+    ( BinaryOp Add
+        ( Var "x" )
+        ( LitInt 1 )
+    )
+, ExprStatement
+    ( BinaryOp Add
+        ( LitInt 2 )
+        ( BinaryOp Mul
+            ( LitInt 3 )
+            ( LitInt 4 )
+        )
+    )
+, ExprStatement
+    ( BinaryOp Mul
+        ( BinaryOp Add
+            ( LitInt 2 )
+            ( LitInt 3 )
+        )
+        ( LitInt 4 )
+    )
+, ExprStatement
+    ( BinaryOp Mod
+        ( LitInt 12 )
+        ( LitInt 3 )
+    )
+, ExprStatement
+    ( BinaryOp Add
+        ( BinaryOp Add
+            ( LitFloat 3.14 )
+            ( LitInt 2 )
+        )
+        ( LitFloat 1.23 )
+    )
+, ExprStatement
+    ( BinaryOp Pow
+        ( LitInt 3 )
+        ( LitInt 2 )
+    )
+, ExprStatement
+    ( BinaryOp Mul
+        ( BinaryOp Mul
+            ( LitInt 3 )
+            ( LitInt 2 )
+        )
+        ( LitInt 4 )
+    )
+, ExprStatement
+    ( BinaryOp Pow
+        ( LitInt 3 )
+        ( BinaryOp Pow
+            ( LitInt 2 )
+            ( LitInt 4 )
+        )
+    )
+, ExprStatement
+    ( BinaryOp Add
+        ( LitInt 123 )
+        ( LitInt 3 )
+    )
+, DeclarationStatement
+    ( Assignment "x" AddAssign
+        ( BinaryOp Mul
+            ( LitInt 12 )
+            ( LitInt 3 )
+        )
+    )
+, DeclarationStatement
+    ( Assignment "x" Assign
+        ( BinaryOp Add
+            ( Var "x" )
+            ( Var "y" )
+        )
+    )
+]
+>= 0
+

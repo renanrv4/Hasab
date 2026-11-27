@@ -1,0 +1,90 @@
+# let - Caso 1
+<
+-- Let com separaÃ§Ã£o por ponto e vÃ­rgula
+let a = 2; s = 3 in a + s
+
+-- Let multilinha
+let a = 2
+    s = 3
+in a + s
+
+-- Let dentro de uma funÃ§Ã£o
+f x =
+    let a = x + 1
+        b = a * 2
+    in b
+
+-- Let com expressÃ£o mais complexa
+calcular x =
+    let a = x * 2
+        b = a + 10
+        c = b ^ 2
+    in c
+$ cabal run -v0 parser-test
+>
+[ ExprStatement
+    ( Let
+        [ Assignment "a" Assign
+            ( LitInt 2 )
+        , Assignment "s" Assign
+            ( LitInt 3 )
+        ]
+        ( BinaryOp Add
+            ( Var "a" )
+            ( Var "s" )
+        )
+    )
+, ExprStatement
+    ( Let
+        [ Assignment "a" Assign
+            ( LitInt 2 )
+        , Assignment "s" Assign
+            ( LitInt 3 )
+        ]
+        ( BinaryOp Add
+            ( Var "a" )
+            ( Var "s" )
+        )
+    )
+, DeclarationStatement
+    ( FuncDef "f" [ "x" ]
+        ( Let
+            [ Assignment "a" Assign
+                ( BinaryOp Add
+                    ( Var "x" )
+                    ( LitInt 1 )
+                )
+            , Assignment "b" Assign
+                ( BinaryOp Mul
+                    ( Var "a" )
+                    ( LitInt 2 )
+                )
+            ]
+            ( Var "b" )
+        )
+    )
+, DeclarationStatement
+    ( FuncDef "calcular" [ "x" ]
+        ( Let
+            [ Assignment "a" Assign
+                ( BinaryOp Mul
+                    ( Var "x" )
+                    ( LitInt 2 )
+                )
+            , Assignment "b" Assign
+                ( BinaryOp Add
+                    ( Var "a" )
+                    ( LitInt 10 )
+                )
+            , Assignment "c" Assign
+                ( BinaryOp Pow
+                    ( Var "b" )
+                    ( LitInt 2 )
+                )
+            ]
+            ( Var "c" )
+        )
+    )
+]
+>= 0
+

@@ -1,0 +1,26 @@
+# literals - Caso 1
+<
+42
+---
+3.14
+---
+true
+---
+false
+---
+-12
+$ cabal run -v0 parser-test
+>
+[ ExprStatement
+    ( LitInt 42 )
+, ExprStatement
+    ( LitFloat 3.14 )
+, ExprStatement ( LitBool True )
+, ExprStatement ( LitBool False )
+, ExprStatement
+    ( UnaryOp Neg
+        ( LitInt 12 )
+    )
+]
+>= 0
+

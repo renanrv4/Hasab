@@ -1,0 +1,7 @@
+true && 12
+---
+(false && true) || true
+---
+x == x
+---
+!x

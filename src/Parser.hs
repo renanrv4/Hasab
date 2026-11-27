@@ -153,6 +153,12 @@ pPlusOperator = try $ lexeme $ do
     notFollowedBy (char '+')
     return Add
 
+pSingleEquals :: Parser String
+pSingleEquals = lexeme $ do
+    _ <- char '='
+    notFollowedBy (char '=')
+    return "="
+
 -- | Bloco Let aceita atribuições e funções locais, separadas por ';' ou '\n'
 pLet :: Parser Expr
 pLet = do
@@ -232,7 +238,7 @@ pAssignOp =
     <|> (SubAssign <$ symbol "-=")
     <|> (MulAssign <$ symbol "*=")
     <|> (DivAssign <$ symbol "/=")
-    <|> (Assign    <$ symbol "=")
+    <|> (Assign    <$ pSingleEquals)
 
 -- | Backtracking restrito apenas ao cabeçalho "nome ::"
 pFuncAnnotation :: Parser Declaration

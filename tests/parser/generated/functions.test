@@ -1,0 +1,117 @@
+# functions - Caso 1
+<
+-- Assinatura de funÃ§Ã£o
+somaLista :: [Int] -> Int
+
+concatenation :: [String] -> String
+
+multFloat :: Float -> Float
+
+f :: Int -> Int
+
+-- DefiniÃ§Ã£o de funÃ§Ã£o
+distancia :: Float -> Float -> Float
+
+distancia x y =
+    sqrt (x^2 + y^2)
+
+-- DefiniÃ§Ã£o sem assinatura
+dobro x =
+    x * 2
+
+-- FunÃ§Ãµes com mais de um parÃ¢metro
+soma x y =
+    x + y
+
+-- ComposiÃ§Ã£o de chamadas
+distanciaOrigem x y =
+    sqrt (x^2 + y^2)
+$ cabal run -v0 parser-test
+>
+[ DeclarationStatement
+    ( FuncAnnot "somaLista"
+        [ TyList TyInt
+        , TyInt
+        ]
+    )
+, DeclarationStatement
+    ( FuncAnnot "concatenation"
+        [ TyList TyString
+        , TyString
+        ]
+    )
+, DeclarationStatement
+    ( FuncAnnot "multFloat"
+        [ TyFloat
+        , TyFloat
+        ]
+    )
+, DeclarationStatement
+    ( FuncAnnot "f"
+        [ TyInt
+        , TyInt
+        ]
+    )
+, DeclarationStatement
+    ( FuncAnnot "distancia"
+        [ TyFloat
+        , TyFloat
+        , TyFloat
+        ]
+    )
+, DeclarationStatement
+    ( FuncDef "distancia"
+        [ "x"
+        , "y"
+        ]
+        ( Call "sqrt"
+            [ BinaryOp Add
+                ( BinaryOp Pow
+                    ( Var "x" )
+                    ( LitInt 2 )
+                )
+                ( BinaryOp Pow
+                    ( Var "y" )
+                    ( LitInt 2 )
+                )
+            ]
+        )
+    )
+, DeclarationStatement
+    ( FuncDef "dobro" [ "x" ]
+        ( BinaryOp Mul
+            ( Var "x" )
+            ( LitInt 2 )
+        )
+    )
+, DeclarationStatement
+    ( FuncDef "soma"
+        [ "x"
+        , "y"
+        ]
+        ( BinaryOp Add
+            ( Var "x" )
+            ( Var "y" )
+        )
+    )
+, DeclarationStatement
+    ( FuncDef "distanciaOrigem"
+        [ "x"
+        , "y"
+        ]
+        ( Call "sqrt"
+            [ BinaryOp Add
+                ( BinaryOp Pow
+                    ( Var "x" )
+                    ( LitInt 2 )
+                )
+                ( BinaryOp Pow
+                    ( Var "y" )
+                    ( LitInt 2 )
+                )
+            ]
+        )
+    )
+]
+>= 0
+

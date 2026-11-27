@@ -1,0 +1,24 @@
+# strings - Caso 1
+<
+"teste"
+---
+"asm,dad" + "askjdw"
+---
+"teste" ++ "teste2"
+$ cabal run -v0 parser-test
+>
+[ ExprStatement
+    ( LitString "teste" )
+, ExprStatement
+    ( BinaryOp Add
+        ( LitString "asm,dad" )
+        ( LitString "askjdw" )
+    )
+, ExprStatement
+    ( BinaryOp Concat
+        ( LitString "teste" )
+        ( LitString "teste2" )
+    )
+]
+>= 0
+

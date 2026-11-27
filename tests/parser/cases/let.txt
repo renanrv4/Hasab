@@ -1,0 +1,20 @@
+-- Let com separação por ponto e vírgula
+let a = 2; s = 3 in a + s
+
+-- Let multilinha
+let a = 2
+    s = 3
+in a + s
+
+-- Let dentro de uma função
+f x =
+    let a = x + 1
+        b = a * 2
+    in b
+
+-- Let com expressão mais complexa
+calcular x =
+    let a = x * 2
+        b = a + 10
+        c = b ^ 2
+    in c

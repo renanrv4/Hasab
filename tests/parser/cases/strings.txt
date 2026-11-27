@@ -1,0 +1,5 @@
+"teste"
+---
+"asm,dad" + "askjdw"
+---
+"teste" ++ "teste2"

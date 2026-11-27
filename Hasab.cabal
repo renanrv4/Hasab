@@ -98,14 +98,12 @@ executable Hasab
     -- Base language which the package is written in.
     default-language: GHC2021
 
-test-suite hasab-tests
-    type:                exitcode-stdio-1.0
-    main-is:             TestSuite.hs
-    hs-source-dirs:      test, src
+executable parser-test
+    main-is: ParserTest.hs
+    hs-source-dirs: app
     build-depends:
         base,
-        HUnit,
+        Hasab,
         megaparsec,
-        parser-combinators,
-        containers
-    default-language:    Haskell2010
+        pretty-simple
+    default-language: GHC2021

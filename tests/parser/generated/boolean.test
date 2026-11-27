@@ -1,0 +1,31 @@
+# boolean - Caso 1
+<
+true && 12
+---
+(false && true) || true
+---
+x == x
+---
+!x
+$ cabal run -v0 parser-test
+>
+[ ExprStatement
+    ( BinaryOp And ( LitBool True )
+        ( LitInt 12 )
+    )
+, ExprStatement
+    ( BinaryOp Or
+        ( BinaryOp And ( LitBool False ) ( LitBool True ) ) ( LitBool True )
+    )
+, ExprStatement
+    ( BinaryOp Eq
+        ( Var "x" )
+        ( Var "x" )
+    )
+, ExprStatement
+    ( UnaryOp Not
+        ( Var "x" )
+    )
+]
+>= 0
+
