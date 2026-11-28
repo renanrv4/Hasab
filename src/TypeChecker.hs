@@ -9,12 +9,6 @@ import qualified Data.Map as Map
 -- 1. DEFINIÇÃO DOS TIPOS ESTÁTICOS E PRIMITIVAS
 --------------------------------------------------------------------------------
 
-data BuiltinOp
-    = BHead
-    | BTail
-    | BLen
-    deriving (Show, Eq)
-
 data Type
     = TInt
     | TFloat
@@ -23,19 +17,16 @@ data Type
     | TEmptyList               -- Tipo polimórfico de lista vazia: []
     | TList Type               -- Lista tipada homogênea: [T]
     | TFunc [Type] Type        -- Assinatura de função: [ParamTypes] -> ReturnType
-    | TBuiltin BuiltinOp       -- Primitivas polimórficas (head, tail, len)
+--    | TBuiltin BuiltinOp       -- Primitivas polimórficas (head, tail, len)
     | TUnit                    -- Tipo de instruções que apenas alteram ambiente
     deriving (Show, Eq)
 
 type TypeEnv = Map String Type
 
--- | Ambiente estático inicial com as primitivas de lista
+-- | Ambiente inicial com funções builtin
 initialTypeEnv :: TypeEnv
 initialTypeEnv = Map.fromList
-    [ ("head", TBuiltin BHead)
-    , ("tail", TBuiltin BTail)
-    , ("len",  TBuiltin BLen)
-    ]
+    []
 
 -- | Converte a anotação sintática da AST (TypeExpr) para o tipo semântico (Type)
 typeExprToType :: TypeExpr -> Type
@@ -46,26 +37,31 @@ typeExprToType TyString    = TString
 typeExprToType (TyList te) = TList (typeExprToType te)
 
 --------------------------------------------------------------------------------
--- 2. UNIFICAÇÃO DE TIPOS (SUPORTE POLIMÓRFICO À LISTA VAZIA [])
+-- 2. SUPORTE À LISTA VAZIA [])
 --------------------------------------------------------------------------------
 
--- | Unifica dois tipos compatíveis, resolvendo TEmptyList contra qualquer TList t
+-- | Unifica dois tipos compatíveis
 unifyTypes :: Type -> Type -> Either String Type
+-- | Unifica TEmptyList com outra Lista
 unifyTypes TEmptyList (TList t)  = Right (TList t)
 unifyTypes (TList t) TEmptyList  = Right (TList t)
 unifyTypes TEmptyList TEmptyList = Right TEmptyList
+
 unifyTypes (TList a) (TList b)   = TList <$> unifyTypes a b
+
 unifyTypes (TFunc p1 r1) (TFunc p2 r2)
     | length p1 == length p2 = TFunc <$> zipWithM unifyTypes p1 p2 <*> unifyTypes r1 r2
     | otherwise = Left "Aridades de função incompatíveis."
+
 unifyTypes t1 t2
-    | t1 == t2  = Right t1
+    | t1 == t2  = Right t1 -- tipos compatíveis
     | otherwise = Left $ "Incompatibilidade de tipos: esperado " ++ show t1 ++ ", mas encontrou " ++ show t2
 
 -- | Verifica se um tipo contém funções ou Unit (não comparáveis com == / !=)
+-- | talvez seja melhor deixar explicito quem pode
 isNonComparable :: Type -> Bool
 isNonComparable (TFunc _ _)  = True
-isNonComparable (TBuiltin _) = True
+-- isNonComparable (TBuiltin _) = True
 isNonComparable TUnit        = True
 isNonComparable (TList t)    = isNonComparable t
 isNonComparable _            = False
@@ -85,15 +81,15 @@ typeCheckExpr env expr = case expr of
     EmptyList   -> Right TEmptyList
 
     -- Variáveis
-    Var name -> case Map.lookup name env of
+    Var name -> case Map.lookup name env of -- verifica se a variável foi declarada
         Just t  -> Right t
-        Nothing -> Left $ "Erro de tipo: Variável não declarada '" ++ name ++ "'."
+        Nothing -> Left $ "Erro de tipo: variável não declarada " ++ name
 
     -- Listas não-vazias (unifica todos os elementos, inclusive listas aninhadas com [])
-    ListExpr [] -> Right TEmptyList
+    ListExpr [] -> Right TEmptyList 
     ListExpr (e:es) -> do
         firstT <- typeCheckExpr env e
-        elemT  <- foldM (\acc x -> typeCheckExpr env x >>= unifyTypes acc) firstT es
+        elemT  <- foldM (\acc x -> typeCheckExpr env x >>= unifyTypes acc) firstT es -- checa se todos os elementos têm o mesmo tipo
         Right (TList elemT)
 
     -- Indexação de listas: xs[i]
@@ -101,26 +97,27 @@ typeCheckExpr env expr = case expr of
         tList <- typeCheckExpr env listExpr
         tIdx  <- typeCheckExpr env idxExpr
         if tIdx /= TInt
-            then Left $ "Erro de tipo: O índice da lista deve ser Int, mas recebeu " ++ show tIdx
+            then Left $ "Erro de tipo: index tem que ser Int, o tipo do index é " ++ show tIdx
             else case tList of
                 TList elemT -> Right elemT
-                TEmptyList  -> Left "Erro de tipo: Não é possível indexar uma lista vazia."
-                _           -> Left $ "Erro de tipo: Esperava uma lista para indexação, recebeu " ++ show tList
+                TEmptyList  -> Left "Erro de tipo: uma lista vazia não tem index"
+                _           -> Left $ "Erro de tipo: espera uma lista para checar o index " ++ show tList
 
     -- Operadores Unários (-x, !b)
     UnaryOp Neg e -> do
         t <- typeCheckExpr env e
         if t == TInt || t == TFloat
             then Right t
-            else Left $ "Erro de tipo: Operador unário '-' espera Int ou Float, recebeu " ++ show t
+            else Left $ "Erro de tipo: (neg op) precisa ser tipo Int ou Float, recebeu " ++ show t
 
     UnaryOp Not e -> do
         t <- typeCheckExpr env e
         if t == TBool
             then Right TBool
-            else Left $ "Erro de tipo: Operador unário '!' espera Bool, recebeu " ++ show t
+            else Left $ "Erro de tipo: (not op) precisa ser tipo Bool, recebeu " ++ show t
 
-    -- Condicional (IfThenElse) com unificação dos ramos (permite then [] else [1, 2])
+    -- Condicional (IfThenElse) com unificação dos ramos 
+    -- (permite then [] else [1, 2], já que emptyList consegue se unir com qualquer lista)
     IfThenElse cond thenExpr elseExpr -> do
         tCond <- typeCheckExpr env cond
         if tCond /= TBool
@@ -128,18 +125,19 @@ typeCheckExpr env expr = case expr of
             else do
                 tThen <- typeCheckExpr env thenExpr
                 tElse <- typeCheckExpr env elseExpr
-                unifyTypes tThen tElse
+                unifyTypes tThen tElse -- checa se e1 == e2 no if
 
-    -- Bloco Let (Escopo local isolado)
+    -- Let
     Let decls body -> do
-        localEnv <- foldM typeCheckDecl env decls
-        typeCheckExpr localEnv body
+        localEnv <- foldM typeCheckDecl env decls -- checa as declarações locais e atualiza o ambiente
+        typeCheckExpr localEnv body -- cria novo env local para o corpo do let
 
-    -- Chamada de Função (Usuário ou Primitiva)
+    -- Chamada de Função
+    -- Pode ser Builtin ou TFunc
     Call name args -> case Map.lookup name env of
-        Just (TBuiltin builtin) -> do
-            argTypes <- mapM (typeCheckExpr env) args
-            typeCheckBuiltin builtin argTypes
+--        Just (TBuiltin builtin) -> do -- por que usar JUST nesse caso e não nos outros?
+--            argTypes <- mapM (typeCheckExpr env) args
+--            typeCheckBuiltin builtin argTypes
 
         Just (TFunc paramTypes returnType) -> do
             argTypes <- mapM (typeCheckExpr env) args
@@ -148,7 +146,8 @@ typeCheckExpr env expr = case expr of
                          ++ show (length paramTypes) ++ " argumentos, mas recebeu "
                          ++ show (length argTypes)
                 else do
-                    _ <- zipWithM unifyTypes paramTypes argTypes
+                    _ <- zipWithM unifyTypes paramTypes argTypes -- tenta unificar os tipos de parâmetros da chamada e da anotação
+                    -- o que é zipWithM
                     Right returnType
 
         Just _  -> Left $ "Erro de tipo: '" ++ name ++ "' não é uma função."
@@ -158,96 +157,108 @@ typeCheckExpr env expr = case expr of
     BinaryOp op e1 e2 -> do
         t1 <- typeCheckExpr env e1
         t2 <- typeCheckExpr env e2
-        typeCheckBinaryOp op t1 t2
+        typeCheckBinaryOp op t1 t2 -- checa se os operadores são válidos para t1 e t2
 
 --------------------------------------------------------------------------------
 -- 4. REGRAS DE TIPAGEM PARA PRIMITIVAS (head, tail, len)
 --------------------------------------------------------------------------------
 
-typeCheckBuiltin :: BuiltinOp -> [Type] -> Either String Type
-typeCheckBuiltin BHead [TList elemT] = Right elemT
-typeCheckBuiltin BHead [TEmptyList]  = Left "Erro de tipo: 'head' não pode ser aplicado a uma lista vazia."
-typeCheckBuiltin BHead args          = Left $ "Erro de tipo: 'head' espera [a], recebeu " ++ show args
-
-typeCheckBuiltin BTail [TList elemT] = Right (TList elemT)
-typeCheckBuiltin BTail [TEmptyList]  = Left "Erro de tipo: 'tail' não pode ser aplicado a uma lista vazia."
-typeCheckBuiltin BTail args          = Left $ "Erro de tipo: 'tail' espera [a], recebeu " ++ show args
-
-typeCheckBuiltin BLen [TList _]    = Right TInt
-typeCheckBuiltin BLen [TEmptyList] = Right TInt
-typeCheckBuiltin BLen args         = Left $ "Erro de tipo: 'len' espera uma lista, recebeu " ++ show args
+-- typeCheckBuiltin :: BuiltinOp -> [Type] -> Either String Type
+-- implementar depois
 
 --------------------------------------------------------------------------------
--- 5. REGRAS PARA OPERADORES BINÁRIOS (16 OPERADORES CORRIGIDOS)
+-- 5. REGRAS PARA OPERADORES BINÁRIOS
 --------------------------------------------------------------------------------
+
+-- Funções de checagem de operações binárias
+
+checkArithmetic :: Type -> Type -> Either String Type
+checkArithmetic TInt TInt = Right TInt
+checkArithmetic TFloat TFloat = Right TFloat
+checkArithmetic t1 t2 = Left $ "Erro de tipo: Operador aritmético, incompatível com " ++ show t1 ++ " e " ++ show t2
+
+checkModulo :: Type -> Type -> Either String Type
+checkModulo TInt TInt = Right TInt
+checkModulo t1 t2 = Left $ "Erro de tipo: Operador '%' exige que ambos sejam Int, e tem " ++ show t1 ++ " e " ++ show t2
+
+checkCons :: Type -> Type -> Either String Type
+checkCons t1 (TList elemsT) = TList <$> unifyTypes elemsT t1
+checkCons t1 TEmptyList = Right (TList t1)
+checkCons _ t2 = Left $ "Erro de tipo: O lado direito de ':' deve ser uma lista " ++ show t2
+
+checkConcat :: Type -> Type -> Either String Type
+checkConcat (TList t1) (TList t2) = TList <$> unifyTypes t1 t2
+checkConcat (TList t1) TEmptyList = Right t1
+checkConcat TEmptyList (TList t2) = Right t2
+checkConcat TEmptyList TEmptyList = Right TEmptyList
+checkConcat TString TString = Right TString
+checkConcat t1 t2 = Left $ "Erro de tipo: Operador '++', precisa de listas ou strings, e tem " ++ show t1 ++ " e " ++ show t2
+
+checkLogical :: Type -> Type -> Either String Type
+checkLogical TBool TBool = Right TBool
+checkLogical t1 t2 = Left $ "Erro de tipo: precisa de dois Bools, tipos de e1 e e2:" ++ show t1 ++ " e " ++ show t2
+
+checkEquality :: Type -> Type -> Either String Type
+checkEquality t1 t2 = do
+    unified <- unifyTypes t1 t2
+    if isNonComparable unified
+        then Left $ "Erro de tipo: tipos não comparáveis: "
+            ++ show t1 ++ " e " ++ show t2
+        else Right TBool
+
+checkRelationals :: Type -> Type -> Either String Type
+checkRelationals TInt TInt = Right TBool
+checkRelationals TFloat TFloat = Right TBool
+checkRelationals t1 t2 = Left $ "Erro de tipo: Operador de relação exige que t1 == t2 (TInt ou TFloat) " ++ show t1 ++ " e " ++ show t2
 
 typeCheckBinaryOp :: BinOp -> Type -> Type -> Either String Type
 typeCheckBinaryOp op t1 t2 = case op of
 
-    -- Aritméticos (+, -, *, /, ^): Int ou Float homogêneos
-    _ | op `elem` [Add, Sub, Mul, Div, Pow] ->
-        if (t1 == TInt || t1 == TFloat) && t1 == t2
-            then Right t1
-            else Left $ "Erro de tipo: Operador aritmético '" ++ show op ++ "' incompatível com "
-                     ++ show t1 ++ " e " ++ show t2
+    -- Operadores aritméticos Int ou Float
+    Add -> checkArithmetic t1 t2
+    Sub -> checkArithmetic t1 t2
+    Mul -> checkArithmetic t1 t2
+    Div -> checkArithmetic t1 t2
+    Pow -> checkArithmetic t1 t2
 
-    -- Módulo (%): exclusivamente Int
-    Mod ->
-        if t1 == TInt && t2 == TInt
-            then Right TInt
-            else Left $ "Erro de tipo: Operador '%' exige dois Ints, recebeu "
-                     ++ show t1 ++ " e " ++ show t2
+    -- Módulo (%) Int
+    Mod -> checkModulo t1 t2
 
-    -- Operador Cons (:): aceita tanto TList elemT quanto TEmptyList à direita (ex: 1 : [])
-    Cons -> case t2 of
-        TList elemT -> TList <$> unifyTypes elemT t1
-        TEmptyList  -> Right (TList t1)
-        _           -> Left $ "Erro de tipo: O lado direito de ':' deve ser uma lista, recebeu " ++ show t2
+    -- Operador Cons (:): aceita TList elemT e também TEmptyList (ex: 1 : [])
+    Cons -> checkCons t1 t2
 
     -- Concatenação de Listas (++): aceita [1,2] ++ [], [] ++ [1,2] e [] ++ []
-    Concat -> case (t1, t2) of
-        (TList _, TList _)   -> unifyTypes t1 t2
-        (TList _, TEmptyList) -> Right t1
-        (TEmptyList, TList _) -> Right t2
-        (TEmptyList, TEmptyList) -> Right TEmptyList
-        _ -> Left $ "Erro de tipo: Operador '++' exige duas listas, recebeu " ++ show t1 ++ " e " ++ show t2
+    Concat -> checkConcat t1 t2
 
     -- Operadores Lógicos (&&, ||)
-    _ | op `elem` [And, Or] ->
-        if t1 == TBool && t2 == TBool
-            then Right TBool
-            else Left $ "Erro de tipo: Operador lógico '" ++ show op ++ "' exige Bools, recebeu "
-                     ++ show t1 ++ " e " ++ show t2
+    And -> checkLogical t1 t2
+    Or -> checkLogical t1 t2
 
     -- Igualdade e Desigualdade (==, !=): unifica tipos (ex: xs == []) e barra funções
-    _ | op `elem` [Eq, Neq] ->
-        if isNonComparable t1 || isNonComparable t2
-            then Left "Erro de tipo: Funções e Unit não podem ser comparados com '==' ou '!='."
-            else do
-                _ <- unifyTypes t1 t2
-                Right TBool
+    Eq -> checkEquality t1 t2
+    Neq -> checkEquality t1 t2
 
     -- Ordenação (<, >, <=, >=): exclusivamente numérica (Int ou Float)
-    _ | op `elem` [Lt, Gt, Leq, Geq] ->
-        if (t1 == TInt || t1 == TFloat) && t1 == t2
-            then Right TBool
-            else Left $ "Erro de tipo: Operador de ordenação '" ++ show op ++ "' exige tipos numéricos iguais, recebeu "
-                     ++ show t1 ++ " e " ++ show t2
+    Lt -> checkRelationals t1 t2
+    Gt -> checkRelationals t1 t2
+    Leq -> checkRelationals t1 t2
+    Geq -> checkRelationals t1 t2
 
     _ -> Left $ "Erro de tipo: Operador não tratado " ++ show op
 
 --------------------------------------------------------------------------------
--- 6. CHECAGEM DE DECLARAÇÕES, FUNÇÕES RECURSIVAS E PROGRAMAS
+-- 6. CHECAGEM DE DECLARAÇÕES
 --------------------------------------------------------------------------------
 
+-- É nessa função que atualizamos o env com assingments de variáveis, anotação de funções e etc
 typeCheckDecl :: TypeEnv -> Declaration -> Either String TypeEnv
 typeCheckDecl env decl = case decl of
 
-    -- Anotação de tipo:
+    -- Anotação de função:
     -- Se tem 1 tipo (ex: xs :: [Int]), registra variável;
     -- Se tem >= 2 tipos (ex: soma :: [Int] -> Int), registra assinatura de função.
     FuncAnnot name typeExprs -> case map typeExprToType typeExprs of
-        []       -> Left $ "Erro de tipo: Anotação vazia para '" ++ name ++ "'."
+        []       -> Left $ "Erro de tipo: Anotação vazia para " ++ name
         [varT]   -> Right (Map.insert name varT env)
         allTypes ->
             let paramTypes = init allTypes
@@ -258,8 +269,7 @@ typeCheckDecl env decl = case decl of
     FuncDef name params body -> case Map.lookup name env of
         Just (TFunc paramTypes returnType) ->
             if length params /= length paramTypes
-                then Left $ "Erro de tipo: Definição de '" ++ name ++ "' tem " ++ show (length params)
-                         ++ " parâmetros, mas a assinatura declara " ++ show (length paramTypes)
+                then Left $ "Erro de tipo: Definição de '" ++ name ++ "' tem " ++ show (length params) ++ " parâmetros, mas a assinatura declara " ++ show (length paramTypes)
                 else do
                     let paramBindings = Map.fromList (zip params paramTypes)
                     let localEnv = Map.union paramBindings env
@@ -284,8 +294,7 @@ typeCheckDecl env decl = case decl of
             tExpr <- typeCheckExpr env expr
             if (varT == TInt || varT == TFloat) && varT == tExpr
                 then Right env
-                else Left $ "Erro de tipo: Operador '" ++ show op ++ "' incompatível com "
-                         ++ show varT ++ " e " ++ show tExpr
+                else Left $ "Erro de tipo: Operador '" ++ show op ++ "' incompatível com " ++ show varT ++ " e " ++ show tExpr
 
 typeCheckStatement :: TypeEnv -> Statement -> Either String (Type, TypeEnv)
 typeCheckStatement env (ExprStatement expr) = do
@@ -301,6 +310,5 @@ typeCheckProgram env (stmt:stmts) = do
     (_, newEnv) <- typeCheckStatement env stmt
     typeCheckProgram newEnv stmts
 
--- | Atalho para validar um programa completo partindo do ambiente padrão
 typeCheckProgramDefault :: Program -> Either String TypeEnv
 typeCheckProgramDefault = typeCheckProgram initialTypeEnv
